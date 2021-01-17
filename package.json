@@ -1,5 +1,5 @@
 {
-  "name": "server-2",
+  "name": "amaRomach-server",
   "version": "1.0.0",
   "description": "",
   "scripts": {
@@ -37,6 +37,7 @@
     "@types/nconf": "^0.10.0",
     "@types/node": "^12.19.13",
     "nodemon": "^2.0.7",
+    "prettier": "2.2.1",
     "tslint": "^5.20.1",
     "typescript": "^3.9.7"
   }

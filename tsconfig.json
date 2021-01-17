@@ -8,14 +8,6 @@
     "noImplicitAny": true,
     "outDir": "dist"
   },
-  "include": [
-    "./src/**/*.ts",
-    "./src/bin/**/*.ts",
-    "./src/config/*.ts",
-    "./src/data/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "./dist"
-  ]
+  "include": ["./src/**/*.ts"],
+  "exclude": ["node_modules", "./dist"]
 }

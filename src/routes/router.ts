@@ -1,9 +1,9 @@
 import * as Router from 'koa-router';
 import * as productController from '../controllers/products-controller';
-import { addMiddlewares } from '../middlewares/products-middleware';
+import { addErrorMiddlewares } from '../middlewares/error-middleware';
 
 export const productRouter = new Router();
-addMiddlewares(productRouter);
+addErrorMiddlewares(productRouter);
 productRouter.get('/products', productController.getProducts);
 productRouter.get('/products/:id', productController.getProductById);
 productRouter.post('/product', productController.addProduct);
