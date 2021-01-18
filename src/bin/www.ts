@@ -1,5 +1,6 @@
 import * as nconf from 'nconf';
-import '../config/configuration';
+import { initConfig } from '../config/configuration';
+initConfig();
 import { listen } from '../app';
 import { mongoConnect } from '../db/database-connection';
 import { logger } from '../utils/logs/logger';

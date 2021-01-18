@@ -1,28 +1,12 @@
 {
   "defaultSeverity": "error",
   "rulesDirectory": [],
-  "extends": [
-    "tslint:latest"
-  ],
+  "extends": ["tslint:latest"],
   "jsRules": {},
   "rules": {
-    "quotemark": [
-      true,
-      "single",
-      "avoid-escape",
-      "avoid-template"
-    ],
-    "file-name-casing": [
-      true,
-      "kebab-case"
-    ],
-    "member-access": [
-      true,
-      "no-public"
-    ],
-    "interface-name": [
-      true,
-      "never-prefix"
-    ]
+    "quotemark": [true, "single", "avoid-escape", "avoid-template"],
+    "file-name-casing": [true, "kebab-case"],
+    "member-access": [true, "no-public"],
+    "interface-name": [true, "never-prefix"]
   }
 }

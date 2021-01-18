@@ -1,8 +1,13 @@
 import { Context } from 'koa';
-import { Product, ProductInterface } from '../db/models/product';
+import { Product, ProductModel } from '../db/models/product';
 import { ProductInCart } from '../models/product-in-cart';
 import { ServerError } from '../models/server-error';
-import { joiCheckOutSchema, joiProductSchema } from '../validations/product-validation-schemas';
+import {
+  joiCheckOutSchema,
+  joiIdSchema,
+  joiProductEditSchema,
+  joiProductSchema,
+} from '../validations/product-validation-schemas';
 
 enum errorMessages {
   NOT_FOUND = 'product not found',
@@ -12,14 +17,18 @@ enum errorMessages {
 
 export const getProducts = async (ctx: Context) => {
   try {
-    ctx.body = await Product.find();
+    ctx.body = await ProductModel.find();
   } catch (err) {
     throw new ServerError(err.message, 500, errorMessages.INTERNAL);
   }
 };
 export const getProductById = async (ctx: Context) => {
+  const { error, value } = joiIdSchema.validate(ctx.params.id);
+  if (error) {
+    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
+  }
   try {
-    const product = await Product.findById(ctx.params.id);
+    const product = await ProductModel.findById(value);
     productExistenceCheck(product, ctx);
   } catch (err) {
     throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
@@ -33,7 +42,7 @@ export const addProduct = async (ctx: Context) => {
     throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
   }
   try {
-    ctx.body = await new Product(value).save();
+    ctx.body = await new ProductModel(value).save();
     ctx.status = 201;
   } catch (err) {
     throw new ServerError(err.message, 500, errorMessages.INTERNAL);
@@ -42,8 +51,18 @@ export const addProduct = async (ctx: Context) => {
 
 export const editProduct = async (ctx: Context) => {
   const productChanges = ctx.request.body;
+  const { error: err, value: id } = joiIdSchema.validate(ctx.params.id);
+  if (err) {
+    throw new ServerError(err.message, 400, errorMessages.NOT_VALID, err.isJoi);
+  }
+  const { error, value } = joiProductEditSchema.validate(productChanges);
+  if (error) {
+    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
+  }
   try {
-    const product = await Product.findByIdAndUpdate(ctx.params.id, productChanges, { new: true });
+    const product = await ProductModel.findByIdAndUpdate(id, value, {
+      new: true,
+    });
     productExistenceCheck(product, ctx);
   } catch (err) {
     throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
@@ -51,8 +70,12 @@ export const editProduct = async (ctx: Context) => {
 };
 
 export const deleteProduct = async (ctx: Context) => {
+  const { error, value } = joiIdSchema.validate(ctx.params.id);
+  if (error) {
+    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
+  }
   try {
-    const product = await Product.findByIdAndRemove(ctx.params.id);
+    const product = await ProductModel.findByIdAndRemove(value);
     productExistenceCheck(product, ctx);
   } catch (err) {
     throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
@@ -65,15 +88,15 @@ export const checkOut = async (ctx: Context) => {
   if (error) {
     throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
   }
-  const session = await Product.startSession();
-  const productsAfterCheckout: ProductInterface[] = [];
+  const session = await ProductModel.startSession();
+  const productsAfterCheckout: Product[] = [];
   try {
     session.startTransaction();
     await Promise.all(
       value.map(async (cartProduct: ProductInCart) => {
-        const product = await Product.findOne({ name: cartProduct.name }).session(session);
+        const product = await ProductModel.findOne({ name: cartProduct.name }).session(session);
         if (product && cartProduct.amount <= product.amount) {
-          const updatedProduct = await Product.findOneAndUpdate(
+          const updatedProduct = await ProductModel.findOneAndUpdate(
             { name: cartProduct.name },
             { amount: product.amount - cartProduct.amount },
             { new: true, session },
@@ -94,7 +117,7 @@ export const checkOut = async (ctx: Context) => {
   ctx.body = productsAfterCheckout;
 };
 
-const productExistenceCheck = (product: ProductInterface, ctx: Context) => {
+const productExistenceCheck = (product: Product, ctx: Context) => {
   if (!product) {
     ctx.body = errorMessages.NOT_FOUND;
     ctx.status = 404;
