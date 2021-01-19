@@ -1,7 +1,7 @@
 import * as Joi from '@hapi/joi';
 const joi_oid = require('joi-oid');
 
-export const joiProductSchema = Joi.object({
+export const joiProductAddSchema = Joi.object({
   amount: Joi.number().min(1).required(),
   description: Joi.string().min(1).required(),
   name: Joi.string().alphanum().min(1).max(30).required(),

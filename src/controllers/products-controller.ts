@@ -5,13 +5,14 @@ import { ServerError } from '../models/server-error';
 import {
   joiCheckOutSchema,
   joiIdSchema,
+  joiProductAddSchema,
   joiProductEditSchema,
-  joiProductSchema,
 } from '../validations/product-validation-schemas';
 
 enum errorMessages {
   NOT_FOUND = 'product not found',
   NOT_VALID = 'product id not valid',
+  INPUT_NOT_VALID = 'input was not valid',
   INTERNAL = 'internal server error',
 }
 
@@ -37,9 +38,13 @@ export const getProductById = async (ctx: Context) => {
 
 export const addProduct = async (ctx: Context) => {
   const product = ctx.request.body;
-  const { error, value } = joiProductSchema.validate(product, { abortEarly: false });
+  const { error, value } = joiProductAddSchema.validate(product, { abortEarly: false });
   if (error) {
-    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
+    const joiError = error.details.map((detail) => ({
+      data: detail.path,
+      message: detail.message,
+    }));
+    throw new ServerError(error.message, 400, errorMessages.INPUT_NOT_VALID, joiError);
   }
   try {
     ctx.body = await new ProductModel(value).save();
@@ -53,11 +58,19 @@ export const editProduct = async (ctx: Context) => {
   const productChanges = ctx.request.body;
   const { error: err, value: id } = joiIdSchema.validate(ctx.params.id);
   if (err) {
-    throw new ServerError(err.message, 400, errorMessages.NOT_VALID, err.isJoi);
+    const joiError = {
+      data: err.details.path,
+      message: err.message,
+    };
+    throw new ServerError(err.message, 400, errorMessages.INPUT_NOT_VALID, [joiError]);
   }
-  const { error, value } = joiProductEditSchema.validate(productChanges);
+  const { error, value } = joiProductEditSchema.validate(productChanges, { abortEarly: false });
   if (error) {
-    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
+    const joiError = error.details.map((detail) => ({
+      data: detail.path,
+      message: detail.message,
+    }));
+    throw new ServerError(error.message, 400, errorMessages.INPUT_NOT_VALID, joiError);
   }
   try {
     const product = await ProductModel.findByIdAndUpdate(id, value, {
@@ -72,7 +85,11 @@ export const editProduct = async (ctx: Context) => {
 export const deleteProduct = async (ctx: Context) => {
   const { error, value } = joiIdSchema.validate(ctx.params.id);
   if (error) {
-    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
+    const joiError = {
+      data: error.details.path,
+      message: error.message,
+    };
+    throw new ServerError(error.message, 400, errorMessages.INPUT_NOT_VALID, [joiError]);
   }
   try {
     const product = await ProductModel.findByIdAndRemove(value);
@@ -86,7 +103,11 @@ export const checkOut = async (ctx: Context) => {
   const products = ctx.request.body;
   const { error, value } = joiCheckOutSchema.validate(products, { abortEarly: false });
   if (error) {
-    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
+    const joiError = error.details.map((detail) => ({
+      data: detail.path,
+      message: detail.message,
+    }));
+    throw new ServerError(error.message, 400, errorMessages.INPUT_NOT_VALID, joiError);
   }
   const session = await ProductModel.startSession();
   const productsAfterCheckout: Product[] = [];

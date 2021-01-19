@@ -1,9 +1,11 @@
+import { JoiError } from './joi-error';
+
 export class ServerError extends Error {
   devMessage: string;
   status: number;
-  joiError?: boolean;
+  joiError?: JoiError[];
 
-  constructor(devMessage: string, status: number, message?: string, joiError?: boolean) {
+  constructor(devMessage: string, status: number, message?: string, joiError?: JoiError[]) {
     super(message);
     this.status = status;
     this.devMessage = devMessage;
