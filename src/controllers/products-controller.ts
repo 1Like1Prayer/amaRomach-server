@@ -26,7 +26,11 @@ export const getProducts = async (ctx: Context) => {
 export const getProductById = async (ctx: Context) => {
   const { error, value } = joiIdSchema.validate(ctx.params.id);
   if (error) {
-    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.isJoi);
+    const joiError = {
+      data: error.details.path,
+      message: error.message,
+    };
+    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, [joiError]);
   }
   try {
     const product = await ProductModel.findById(value);
