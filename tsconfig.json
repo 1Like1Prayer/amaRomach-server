@@ -8,6 +8,6 @@
     "noImplicitAny": true,
     "outDir": "dist"
   },
-  "include": ["./src/**/*.ts", "joi-oid.d.ts"],
+  "include": ["./src/**/*.ts"],
   "exclude": ["node_modules", "./dist"]
 }
