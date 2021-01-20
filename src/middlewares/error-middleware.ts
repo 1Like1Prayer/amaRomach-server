@@ -1,3 +1,4 @@
+import { ValidationErrorItem } from '@hapi/joi';
 import * as Koa from 'koa';
 import { JoiError } from '../models/joi-error';
 import { logger } from '../utils/logs/logger';
@@ -7,10 +8,9 @@ export const errorMiddleware: Koa.Middleware = async (ctx: Koa.Context, next: Ko
     await next();
   } catch (err) {
     if (err.joiError) {
-      ctx.body = err.joiError;
-      err.joiError.forEach((error: JoiError) => {
-        logger.error(`joi Error - ${error.message}`);
-      });
+      const joiError: JoiError[] = parseJoiError(err.joiError);
+      ctx.body = joiError;
+      logger.error({ joiError });
     } else {
       ctx.status = err.status || 500;
       process.env.NODE_ENV === 'production'
@@ -20,3 +20,6 @@ export const errorMiddleware: Koa.Middleware = async (ctx: Koa.Context, next: Ko
     }
   }
 };
+
+const parseJoiError = (details: ValidationErrorItem[]): JoiError[] =>
+  details.map((detail: ValidationErrorItem) => ({ data: detail.path, message: detail.message }));
