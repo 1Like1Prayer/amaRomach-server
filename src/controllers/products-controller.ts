@@ -1,97 +1,128 @@
-import { Product, ProductInterface } from '../data/models/product';
-import { ProductInCart } from '../data/models/product-in-cart';
+import { Context } from 'koa';
+import { Product, ProductModel } from '../db/models/product';
+import { ProductInCart } from '../models/product-in-cart';
 import { ServerError } from '../models/server-error';
-import { logger } from '../utils/logs/logger';
-import { joiCheckOutSchema, joiProductSchema } from '../validations/product-validation-schemas';
+import {
+  joiCheckOutSchema,
+  joiIdSchema,
+  joiProductAddSchema,
+  joiProductEditSchema,
+} from '../validations/product-validation-schemas';
 
 enum errorMessages {
-    NOT_FOUND = 'product not found',
-    NOT_VALID = 'product id not valid',
-    INTERNAL = 'internal server error',
+  NOT_FOUND = 'product not found',
+  NOT_VALID = 'product id not valid',
+  INPUT_NOT_VALID = 'input was not valid',
+  INTERNAL = 'internal server error',
 }
 
-export const getProducts = async (ctx: any) => {
-    try {
-        ctx.body = await Product.find();
-    } catch (err) {
-        throw new ServerError(err.message, 500, errorMessages.INTERNAL);
-    }
+export const getProducts = async (ctx: Context) => {
+  try {
+    ctx.body = await ProductModel.find();
+  } catch (err) {
+    throw new ServerError(err.message, 500, errorMessages.INTERNAL);
+  }
 };
-export const getProductById = async (ctx: any) => {
-    try {
-        const product = await Product.findById(ctx.params.id);
-        productExistenceCheck(product, ctx);
-    } catch (err) {
-        throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
-    }
-};
-
-export const addProduct = async (ctx: any) => {
-    const product = ctx.request.body;
-    const { error, value } = joiProductSchema.validate(product);
-    logger.info(value);
-    if (error) {
-        logger.info(`joi error - ${error}`);
-        ctx.body = error.message;
-        ctx.status = 400;
-        return;
-    }
-    try {
-        ctx.body = await new Product(product).save();
-        ctx.status = 201;
-    } catch (err) {
-        throw new ServerError(err.message, 500, errorMessages.INTERNAL);
-    }
+export const getProductById = async (ctx: Context) => {
+  const { error, value } = joiIdSchema.validate(ctx.params.id);
+  if (error) {
+    throw new ServerError(error.message, 400, errorMessages.NOT_VALID, error.details);
+  }
+  try {
+    const product = await ProductModel.findById(value);
+    productExistenceCheck(product, ctx);
+  } catch (err) {
+    throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
+  }
 };
 
-export const editProduct = async (ctx: any) => {
-    try {
-        const product = await Product.findByIdAndUpdate(ctx.params.id, { price: 400 }, { new: true });
-        productExistenceCheck(product, ctx);
-    } catch (err) {
-        throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
-    }
+export const addProduct = async (ctx: Context) => {
+  const product = ctx.request.body;
+  const { error, value } = joiProductAddSchema.validate(product, { abortEarly: false });
+  if (error) {
+    throw new ServerError(error.message, 400, errorMessages.INPUT_NOT_VALID, error.details);
+  }
+  try {
+    ctx.body = await new ProductModel(value).save();
+    ctx.status = 201;
+  } catch (err) {
+    throw new ServerError(err.message, 500, errorMessages.INTERNAL);
+  }
 };
 
-export const deleteProduct = async (ctx: any) => {
-    try {
-        const product = await Product.findByIdAndRemove(ctx.params.id);
-        productExistenceCheck(product, ctx);
-    } catch (err) {
-        throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
-    }
-};
-
-export const checkOut = async (ctx: any) => {
-    const products = ctx.request.body;
-    products.map(async (cartProduct: ProductInCart) => {
-        const { error } = joiCheckOutSchema.validate(cartProduct);
-        if (error) {
-            logger.info(`joi error - ${error}`);
-            ctx.body = error.message;
-            ctx.status = 400;
-            return;
-        }
-        try {
-            const product = await Product.findOne({ name: cartProduct.name });
-            if (product && cartProduct.amount <= product.amount) {
-                await Product.findOneAndUpdate({ name: cartProduct.name },
-                    { amount: product.amount - cartProduct.amount }, { new: true });
-            } else {
-                logger.info('checkout amount exceeding the product current available amount');
-            }
-        } catch (err) {
-            throw new ServerError(err.message, 500, errorMessages.INTERNAL);
-        }
+export const editProduct = async (ctx: Context) => {
+  const productChanges = ctx.request.body;
+  const { error: err, value: id } = joiIdSchema.validate(ctx.params.id);
+  if (err) {
+    throw new ServerError(err.message, 400, errorMessages.INPUT_NOT_VALID, err.details);
+  }
+  const { error, value } = joiProductEditSchema.validate(productChanges, { abortEarly: false });
+  if (error) {
+    throw new ServerError(error.message, 400, errorMessages.INPUT_NOT_VALID, error.details);
+  }
+  try {
+    const product = await ProductModel.findByIdAndUpdate(id, value, {
+      new: true,
     });
-    await getProducts(ctx);
+    productExistenceCheck(product, ctx);
+  } catch (err) {
+    throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
+  }
 };
 
-const productExistenceCheck = (product: ProductInterface, ctx: any) => {
-    if (!product) {
-        ctx.body = errorMessages.NOT_FOUND;
-        ctx.status = 404;
-    } else {
-        ctx.body = product;
-    }
+export const deleteProduct = async (ctx: Context) => {
+  const { error, value } = joiIdSchema.validate(ctx.params.id);
+  if (error) {
+    throw new ServerError(error.message, 400, errorMessages.INPUT_NOT_VALID, error.details);
+  }
+  try {
+    const product = await ProductModel.findByIdAndRemove(value);
+    productExistenceCheck(product, ctx);
+  } catch (err) {
+    throw new ServerError(err.message, 400, errorMessages.NOT_VALID);
+  }
+};
+
+export const checkOut = async (ctx: Context) => {
+  const products = ctx.request.body;
+  const { error, value } = joiCheckOutSchema.validate(products, { abortEarly: false });
+  if (error) {
+    throw new ServerError(error.message, 400, errorMessages.INPUT_NOT_VALID, error.details);
+  }
+  const session = await ProductModel.startSession();
+  const productsAfterCheckout: Product[] = [];
+  try {
+    session.startTransaction();
+    await Promise.all(
+      value.map(async (cartProduct: ProductInCart) => {
+        const product = await ProductModel.findOne({ name: cartProduct.name }).session(session);
+        if (product && cartProduct.amount <= product.amount) {
+          const updatedProduct = await ProductModel.findOneAndUpdate(
+            { name: cartProduct.name },
+            { amount: product.amount - cartProduct.amount },
+            { new: true, session },
+          );
+          productsAfterCheckout.push(updatedProduct);
+        } else {
+          throw new Error('checkout amount exceeding the product current available amount');
+        }
+      }),
+    );
+    await session.commitTransaction();
+    session.endSession();
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new ServerError(err.message, 500, errorMessages.INTERNAL);
+  }
+  ctx.body = productsAfterCheckout;
+};
+
+const productExistenceCheck = (product: Product, ctx: Context) => {
+  if (!product) {
+    ctx.body = errorMessages.NOT_FOUND;
+    ctx.status = 404;
+  } else {
+    ctx.body = product;
+  }
 };
