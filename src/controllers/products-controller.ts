@@ -1,4 +1,5 @@
 import { Context } from 'koa';
+import { reduceCart } from '../cache/cart';
 import { Product, ProductModel } from '../db/models/product';
 import { ProductInCart } from '../models/product-in-cart';
 import { ServerError } from '../models/server-error';
@@ -18,7 +19,8 @@ enum errorMessages {
 
 export const getProducts = async (ctx: Context) => {
   try {
-    ctx.body = await ProductModel.find();
+    const products = await ProductModel.find();
+    ctx.body = reduceCart(products);
   } catch (err) {
     throw new ServerError(err.message, 500, errorMessages.INTERNAL);
   }
@@ -95,10 +97,10 @@ export const checkOut = async (ctx: Context) => {
     session.startTransaction();
     await Promise.all(
       value.map(async (cartProduct: ProductInCart) => {
-        const product = await ProductModel.findOne({ name: cartProduct.name }).session(session);
+        const product = await ProductModel.findOne({ _id: cartProduct.id }).session(session);
         if (product && cartProduct.amount <= product.amount) {
           const updatedProduct = await ProductModel.findOneAndUpdate(
-            { name: cartProduct.name },
+            { _id: cartProduct.id },
             { amount: product.amount - cartProduct.amount },
             { new: true, session },
           );
