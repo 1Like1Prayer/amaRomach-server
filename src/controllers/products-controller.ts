@@ -1,5 +1,4 @@
 import { Context } from 'koa';
-import { reduceCart } from '../cache/cart';
 import { Product, ProductModel } from '../db/models/product';
 import { ProductInCart } from '../models/product-in-cart';
 import { ServerError } from '../models/server-error';
@@ -9,8 +8,9 @@ import {
   joiProductAddSchema,
   joiProductEditSchema,
 } from '../validations/product-validation-schemas';
+import { reduceCart } from '../ws/cart-reservation/cart';
 
-enum errorMessages {
+export enum errorMessages {
   NOT_FOUND = 'product not found',
   NOT_VALID = 'product id not valid',
   INPUT_NOT_VALID = 'input was not valid',

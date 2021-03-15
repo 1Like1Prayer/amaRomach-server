@@ -47,13 +47,13 @@ jspm_packages/
 # TypeScript v1 declaration files
 typings/
 
-# TypeScript cache
+# TypeScript cart-reservation
 *.tsbuildinfo
 
-# Optional npm cache directory
+# Optional npm cart-reservation directory
 .npm
 
-# Optional eslint cache
+# Optional eslint cart-reservation
 .eslintcache
 
 # Optional REPL history
@@ -69,7 +69,7 @@ typings/
 .env
 .env.test
 
-# parcel-bundler cache (https://parceljs.org/)
+# parcel-bundler cart-reservation (https://parceljs.org/)
 .cache
 
 # next.js build output
@@ -87,7 +87,7 @@ public/
 # Serverless directories
 .serverless/
 
-# FuseBox cache
+# FuseBox cart-reservation
 .fusebox/
 
 # DynamoDB Local files
@@ -160,7 +160,7 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
-# Android studio 3.1+ serialized cache file
+# Android studio 3.1+ serialized cart-reservation file
 .idea/caches/build_file_checksums.ser
 
 ### WebStorm+all Patch ###

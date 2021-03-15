@@ -21,7 +21,7 @@ export const joiProductEditSchema = Joi.object({
 
 export const joiIdSchema = joi_oid.objectId().required();
 
-const joiProductInCartSchema = Joi.object({
+export const joiProductInCartSchema = Joi.object({
   amount: Joi.number().min(1).required(),
   id: Joi.string().alphanum().min(3).max(30).required(),
 });

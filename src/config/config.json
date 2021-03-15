@@ -4,5 +4,8 @@
   "database": {
     "collectionName": "products",
     "mongoUrl": "mongodb+srv://host:Pass4Atlassian@amaromach.bdhoo.mongodb.net/amaRomach?retryWrites=true&w=majority"
+  },
+  "cors": {
+    "origin": "http://localhost:4200"
   }
 }
