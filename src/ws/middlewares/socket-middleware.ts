@@ -50,7 +50,8 @@ export const socketMiddleware = (socket: Socket, next: any) => {
         new ServerError(error.message, 400, errorMessages.NOT_VALID, error.details),
       );
     } else {
-      addItemToCart(socket.id, { id: value, amount: 0 });
+      addItemToCart(socket.id, productId);
+      socket.broadcast.emit(SocketActions.UPDATE_PRODUCT_IN_CLIENT, value, 1);
     }
   });
 

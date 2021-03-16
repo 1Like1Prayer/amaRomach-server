@@ -20,13 +20,11 @@ export const removeUserFromCart = (userId: string) => {
 };
 
 export const checkoutUser = (userId: string) => {
-  Object.keys(cart[userId]).forEach((productId: string) => {
-    cart[userId][productId] = 0;
-  });
+  cart[userId] = {};
 };
 
-export const addItemToCart = (userId: string, product: ProductInCart) => {
-  cart[userId][product.id] = product.amount;
+export const addItemToCart = (userId: string, productId: Types.ObjectId) => {
+  cart[userId][productId.toString()] = 1;
 };
 
 export const removeItemFromCart = (userId: string, productId: string) => {
