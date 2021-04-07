@@ -21,5 +21,5 @@ export const errorMiddleware: Koa.Middleware = async (ctx: Koa.Context, next: Ko
   }
 };
 
-const parseJoiError = (details: ValidationErrorItem[]): JoiError[] =>
+export const parseJoiError = (details: ValidationErrorItem[]): JoiError[] =>
   details.map((detail: ValidationErrorItem) => ({ data: detail.path, message: detail.message }));

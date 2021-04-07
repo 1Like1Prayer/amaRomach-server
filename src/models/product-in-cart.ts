@@ -1,4 +1,4 @@
 export interface ProductInCart {
-  name: string;
+  id: string;
   amount: number;
 }
