@@ -13,7 +13,7 @@ export const joiProductAddSchema = Joi.object({
 export const joiProductEditSchema = Joi.object({
   amount: Joi.number().min(1),
   description: Joi.string().min(1),
-  imagePath: Joi.string().min(1).max(30).required(),
+  imagePath: Joi.string().min(1).max(30),
   name: Joi.string().alphanum().min(1).max(30),
   price: Joi.number().min(1),
   rating: Joi.number().min(1).required(),

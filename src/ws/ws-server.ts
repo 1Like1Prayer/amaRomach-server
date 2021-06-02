@@ -6,7 +6,7 @@ import { logger } from '../utils/logs/logger';
 import { socketMiddleware } from './middlewares/socket-middleware';
 
 export const server: any = createServer(app.callback());
-export const io = new Server(server, {
+const io = new Server(server, {
   cors: {
     origin: nconf.get('cors').origin,
   },
