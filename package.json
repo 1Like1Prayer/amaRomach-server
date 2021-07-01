@@ -21,7 +21,6 @@
   "dependencies": {
     "@hapi/joi": "^16.1.8",
     "@types/koa__cors": "^3.0.2",
-    "apollo-datasource-rest": "^0.12.0",
     "apollo-server": "^2.25.0",
     "apollo-server-koa": "^2.25.0",
     "graphql": "^15.5.0",

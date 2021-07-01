@@ -1,6 +1,5 @@
 import { Types } from 'mongoose';
 import { Product } from '../../db/models/product';
-import { ProductInCart } from '../../models/product-in-cart';
 
 export const cart: Record<string, Record<string, number>> = {};
 
