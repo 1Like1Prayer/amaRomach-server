@@ -1,4 +1,5 @@
 import { ApolloError, PubSub, UserInputError } from 'apollo-server';
+import { Context } from 'koa';
 import { Product, ProductModel } from '../../db/models/product';
 import { ProductInCart } from '../../models/product-in-cart';
 import {
@@ -15,6 +16,7 @@ import {
   removeItemFromCart,
   updateItemInCart,
 } from '../../ws/cart-reservation/cart';
+import { checkoutProduct } from '../utils/checkout.util';
 
 export const pubsub = new PubSub();
 
@@ -23,39 +25,41 @@ export const resolvers = {
     addProduct: async (_: any, { product }: any) => {
       const { error, value } = joiProductAddSchema.validate(product);
       if (error) {
-        throw new UserInputError(error.message);
+        throw new ApolloError(error.message);
       }
       const savedProduct = await new ProductModel(value).save();
       return savedProduct;
     },
-    addProductToCart: (_: any, { id, amount }: any, context: any) => {
+    addProductToCart: (_: any, { id, amount }: any, context: Context) => {
       const { value: productId, error } = joiIdSchema.validate(id);
       if (error) {
-        throw new UserInputError(error.message);
+        throw new ApolloError(error.message);
       }
+
       addItemToCart(context.id, productId);
-      pubsub.publish('PRODUCT_ADDED', { product: [{ id: productId, amount: 1 }] });
+      pubsub.publish('PRODUCT_OCCUPY', { products: [{ id: productId, amount: 1 }] });
       return { id: productId, amount: 1 };
     },
-    updateProductInCart: (_: any, { id, amount }: any, context: any) => {
+    updateProductInCart: (_: any, { id, amount }: any, context: Context) => {
       const { value: productId, error } = joiIdSchema.validate(id);
       if (error) {
-        throw new UserInputError(error.message);
+        throw new ApolloError(error.message);
       }
       updateItemInCart(context.id, productId, amount);
-      pubsub.publish('PRODUCT_CHANGED', { product: [{ id: productId, amount }] });
+      pubsub.publish('PRODUCT_OCCUPY', { products: [{ id: productId, amount }] });
       return { id: productId, amount };
     },
-    removeProductFromCart: (_: any, { id }: any, context: any) => {
+    removeProductFromCart: (_: any, { id }: any, context: Context) => {
       const { value: productId, error } = joiIdSchema.validate(id);
       if (error) {
-        throw new UserInputError(error.message);
+        throw new ApolloError(error.message);
+      } else {
+        removeItemFromCart(context.id, productId);
+        pubsub.publish('PRODUCT_OCCUPY', { products: [{ id: productId, amount: 0 }] });
+        return { id: productId, amount: 0 };
       }
-      removeItemFromCart(context.id, productId);
-      pubsub.publish('PRODUCT_CHANGED', { product: [{ id: productId, amount: 0 }] });
-      return { id: productId, amount: 0 };
     },
-    checkout: async (_: any, { cartProducts }: any, context: any) => {
+    checkout: async (_: any, { cartProducts }: any, context: Context) => {
       const { error, value } = joiCheckOutSchema.validate(cartProducts, { abortEarly: false });
       if (error) {
         throw new UserInputError(error.message);
@@ -81,15 +85,15 @@ export const resolvers = {
     deleteProduct: async (_: any, { id }: any) => {
       const { error, value } = joiIdSchema.validate(id);
       if (error) {
-        throw new UserInputError(error.message);
+        throw new ApolloError(error.message);
       }
       const product = await ProductModel.findByIdAndRemove(value);
-      return product ? true : false;
+      return product ? true : new ApolloError('Product does not exist');
     },
     editProduct: async (_: any, { id, productChanges }: any) => {
       const { error: err, value: productId } = joiIdSchema.validate(id);
       if (err) {
-        throw new UserInputError(err.message);
+        throw new ApolloError(err.message);
       }
       const { error, value } = joiProductEditSchema.validate(productChanges, {
         abortEarly: false,
@@ -100,14 +104,10 @@ export const resolvers = {
       const product = await ProductModel.findByIdAndUpdate(productId, value, {
         new: true,
       });
-      return product ? product : new UserInputError("Product Doesn't Exist");
+      return product ? product : new ApolloError("Product Doesn't Exist");
     },
   },
   Query: {
-    connectionQuery: (_: any, __: any, Context: any) => {
-      createUserCart(Context.id);
-      return true;
-    },
     product: async (_: any, { id }: any) => {
       const { error, value } = joiIdSchema.validate(id);
       if (error) {
@@ -122,29 +122,8 @@ export const resolvers = {
     },
   },
   Subscription: {
-    product: {
-      subscribe: () => pubsub.asyncIterator(['PRODUCT_CHANGED', 'PRODUCT_ADDED']),
+    products: {
+      subscribe: () => pubsub.asyncIterator(['PRODUCT_OCCUPY']),
     },
   },
-};
-
-const checkoutProduct = async (
-  cartProduct: ProductInCart,
-  session: any,
-  productsAfterCheckout: Product[],
-) => {
-  const product = await ProductModel.findOne({ _id: cartProduct.id }).session(session);
-  if (!product) {
-    throw new UserInputError("Product Doesn't Exist");
-  }
-  if (cartProduct.amount <= product.amount) {
-    const updatedProduct = await ProductModel.findOneAndUpdate(
-      { _id: cartProduct.id },
-      { amount: product.amount - cartProduct.amount },
-      { new: true, session },
-    );
-    productsAfterCheckout.push(updatedProduct);
-  } else {
-    throw new UserInputError('checkout amount exceeding the product current available amount');
-  }
 };

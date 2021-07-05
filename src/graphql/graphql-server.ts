@@ -1,6 +1,7 @@
 import { ApolloError } from 'apollo-server';
 import { ApolloServer } from 'apollo-server-koa';
 import { GraphQLError } from 'graphql';
+import { logger } from '../utils/logs/logger';
 import { removeUserFromCart } from '../ws/cart-reservation/cart';
 import { resolvers } from './resolvers/product-resolver';
 import { typeDefs } from './schemas/product-schema';
@@ -11,6 +12,7 @@ export const graphqlServer = new ApolloServer({
   },
   formatError: (error: GraphQLError) => {
     if (process.env.NODE_ENV === 'production') {
+      logger.error(error);
       return new ApolloError('Internal Error');
     }
     return new ApolloError(error.message);

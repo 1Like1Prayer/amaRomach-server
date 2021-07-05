@@ -18,7 +18,6 @@ export const typeDefs = gql`
   type Query {
     product(id: ID!): Product
     products: [Product]
-    connectionQuery: Boolean
   }
   type Mutation {
     addProduct(product: ProductInput!): Product
@@ -30,7 +29,7 @@ export const typeDefs = gql`
     removeProductFromCart(id: ID!): Product
   }
   type Subscription {
-    product: [CartProduct]
+    products: [CartProduct]
   }
 
   input ProductInput {
