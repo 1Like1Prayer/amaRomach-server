@@ -11,7 +11,6 @@ import {
 import {
   addItemToCart,
   checkoutUser,
-  createUserCart,
   reduceCart,
   removeItemFromCart,
   updateItemInCart,
@@ -25,7 +24,7 @@ export const resolvers = {
     addProduct: async (_: any, { product }: any) => {
       const { error, value } = joiProductAddSchema.validate(product);
       if (error) {
-        throw new ApolloError(error.message);
+        throw new UserInputError(error.message);
       }
       const savedProduct = await new ProductModel(value).save();
       return savedProduct;
@@ -54,9 +53,9 @@ export const resolvers = {
       if (error) {
         throw new ApolloError(error.message);
       } else {
-        removeItemFromCart(context.id, productId);
-        pubsub.publish('PRODUCT_OCCUPY', { products: [{ id: productId, amount: 0 }] });
-        return { id: productId, amount: 0 };
+        const amountToRemove = removeItemFromCart(context.id, productId);
+        pubsub.publish('PRODUCT_OCCUPY', { products: [{ id: productId, amount: amountToRemove }] });
+        return { id: productId, amount: amountToRemove };
       }
     },
     checkout: async (_: any, { cartProducts }: any, context: Context) => {
