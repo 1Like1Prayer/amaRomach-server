@@ -34,6 +34,9 @@ export const removeItemFromCart = (userId: string, productId: string) => {
   if (!cart.hasOwnProperty(userId)) {
     throw new ApolloError('User ID is not valid');
   }
+  if (!cart[userId].hasOwnProperty(productId)) {
+    throw new ApolloError('Product does not exist in user`s cart');
+  }
   const amount = -cart[userId][productId];
   delete cart[userId][productId];
   return amount;
