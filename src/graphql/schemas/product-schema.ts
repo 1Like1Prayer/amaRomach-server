@@ -21,7 +21,7 @@ export const typeDefs = gql`
   }
   type Mutation {
     addProduct(product: ProductInput!): Product
-    checkout(cartProducts: [CartProductInput]!): [Product]
+    checkout: [Product]
     deleteProduct(id: ID!): Boolean
     editProduct(id: ID!, productChanges: ProductInput!): Product
     addProductToCart(id: ID!, amount: Int = 1): Product
