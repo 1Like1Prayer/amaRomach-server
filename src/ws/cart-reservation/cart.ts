@@ -1,11 +1,13 @@
+import { ApolloError } from 'apollo-server';
 import { Types } from 'mongoose';
 import { Product } from '../../db/models/product';
-import { ProductInCart } from '../../models/product-in-cart';
 
 export const cart: Record<string, Record<string, number>> = {};
 
 export const createUserCart = (userId: string) => {
-  cart[userId] = {};
+  if (!cart.hasOwnProperty(userId)) {
+    cart[userId] = {};
+  }
 };
 
 export const removeUserFromCart = (userId: string) => {
@@ -24,16 +26,26 @@ export const checkoutUser = (userId: string) => {
 };
 
 export const addItemToCart = (userId: string, productId: Types.ObjectId) => {
+  createUserCart(userId);
   cart[userId][productId.toString()] = 1;
 };
 
 export const removeItemFromCart = (userId: string, productId: string) => {
+  if (!cart.hasOwnProperty(userId)) {
+    throw new ApolloError('User ID is not valid');
+  }
+  if (!cart[userId].hasOwnProperty(productId)) {
+    throw new ApolloError('Product does not exist in user`s cart');
+  }
   const amount = -cart[userId][productId];
   delete cart[userId][productId];
   return amount;
 };
 
 export const updateItemInCart = (userId: string, productId: string, amount: number) => {
+  if (!cart.hasOwnProperty(userId)) {
+    throw new ApolloError('User ID is not valid');
+  }
   const broadcastAmount =
     amount > cart[userId][productId]
       ? amount - cart[userId][productId]
